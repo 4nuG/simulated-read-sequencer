@@ -1,11 +1,79 @@
 #! /usr/bin/env python3
 
 import argparse
+import random
+import re
 
 # Parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("FASTA", type=argparse.FileType('r'), help="FASA file")
-parser.add_argument("coverage", type=int, help="get coverage")
-parser.add_argument("sampling", type=int, help="get sampling")
-
+parser.add_argument("FASTA", type=str, help="FASA file")
+# parser.add_argument("coverage", type=int, help="desired coverage")
+parser.add_argument("number_of_reads", type=int, help="number_of_reads desired")
+parser.add_argument("read_size", type=int, help="read length")
 args = parser.parse_args()
+
+
+# coverage = number_of_reads (length_of_read/size_of_genome)
+#def curent_match(reads, read):
+
+def align_reads(reads):
+	cur = ''
+	new = ""
+	prefix = ""
+	suffix = ""
+	for x in reads:
+		for y in reads:
+			if x != y:
+				for nuc in range(len(x)):
+					if y.startswith(x[nuc:]):
+						cur = x[nuc:]
+						prefix = x
+						suffix = y
+						break
+	if cur == "":
+		return reads
+	new = prefix + suffix[len(cur):]
+	if prefix in reads:
+		reads.remove(prefix)
+	if suffix in reads:
+		reads.remove(suffix)
+	reads.append(new)
+
+	return reads
+
+def align(reads):
+	while len(reads) >= 0:
+        	if len(reads) == 1:
+                	break
+        	reads = align_reads(reads)
+	return reads[0]
+
+def simulate_reads(fasta, num_reads, read_size):
+	try:
+		my_file = open(fasta, 'r')
+		string = ""
+		list_of_reads = []
+		for line in my_file:
+			line = line.rstrip()
+			string += line
+		my_file.close()
+		print("Given genome is: ", string)
+		# split into the specified reads 
+		for x in range(num_reads):
+			pivot = random.randint(0, len(string))
+			after = pivot + read_size
+			if after <= len(string):
+				if string[pivot:after] not in list_of_reads:
+					list_of_reads.append(string[pivot:after])
+			else:
+				over  = after-len(string) 
+				if string[pivot-over:after] not in list_of_reads:
+					list_of_reads.append(string[pivot-over:after])
+		return list_of_reads
+	except:
+		print("An error occured")
+		return 0
+
+reads = simulate_reads(args.FASTA, args.number_of_reads, args.read_size)
+
+print("Aligned reads: ", align(reads))
